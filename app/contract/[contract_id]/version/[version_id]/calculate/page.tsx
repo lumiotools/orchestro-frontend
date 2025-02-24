@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import dummyData from "./dummyData.json";
+import { getApiUrl } from "@/utils/api";
 
 // Updated Interfaces for dynamic data
 interface RateData {
@@ -112,8 +113,27 @@ export default function CalculatePage() {
   const handleCalculate = async () => {
     setLoading(true);
     try {
+      const response = await fetch(
+        getApiUrl(`/api/v1/contract/calculate/${params.version_id}`),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            weekly_price: weeklyCharges,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
       // Use dummyData for now, replace with API call later
-      setCalculatedData(dummyData as unknown as CalculatedData);
+      // setCalculatedData(dummyData as unknown as CalculatedData);
+      setCalculatedData(data?.discount_card as unknown as CalculatedData);
 
       // Update URL with new weekly charges
       const newSearchParams = new URLSearchParams(searchParams.toString());
