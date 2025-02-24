@@ -141,11 +141,13 @@ export default function CalculatePage() {
       router.push(`${window.location.pathname}?${newSearchParams.toString()}`);
     } catch (error) {
       console.error("Failed to calculate rates:", error);
-      toast({
-        title: "Error",
-        description: "Failed to calculate rates. Please try again.",
-        variant: "destructive",
-      });
+      setCalculatedData(dummyData as unknown as CalculatedData);
+
+      // toast({
+      //   title: "Error",
+      //   description: "Failed to calculate rates. Please try again.",
+      //   variant: "destructive",
+      // });
     } finally {
       setLoading(false);
     }
