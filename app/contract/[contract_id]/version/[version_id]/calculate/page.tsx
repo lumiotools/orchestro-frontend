@@ -60,7 +60,91 @@ export default function CalculatePage() {
   const [weights, setWeights] = useState<string[]>([]);
   const [zones, setZones] = useState<string[]>([]);
   const [selectedTab, setSelectedTab] = useState("discount");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Form input states
+  const [weeklyCharge, setWeeklyCharge] = useState("");
+  const [weightRange, setWeightRange] = useState("");
+  const weeklyChargeInt = parseInt(weeklyCharge) || 0;
+  const weightRangeInt = parseInt(weightRange) || 0;
+  const handleSubmit = async () => {
+    try {
+      // Convert input values to integers with fallback to 0 if invalid
+      const weeklySpend = parseInt(weeklyCharge) || 0;
+      const weightRangeWidth = parseInt(weightRange) || 0;
+
+      // Validate inputs
+      if (weeklySpend <= 0 || weightRangeWidth <= 0) {
+        alert("Please enter valid values for Weekly Charge and Weight Range");
+        return;
+      }
+
+      console.log("Downloading Moyer's data:", {
+        weekly_spend: weeklySpend,
+        weight_range_width: weightRangeWidth,
+      });
+
+      // Construct API URL
+      const apiUrl = getApiUrl(
+        `/api/v1/contract/${params.version_id}/discount_card/download`
+      );
+
+      // Create request options
+      const requestOptions = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          weekly_spend: weeklySpend,
+          weight_range_width: weightRangeWidth,
+        }),
+      };
+
+      // Make the API call
+      const response = await fetch(apiUrl, requestOptions);
+
+      // Check if the response is successful
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to download the file");
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+
+      // Create a download link and trigger the download
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = "discounts.xlsx";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Close the modal after successful download
+      setIsModalOpen(false);
+
+      // Reset form fields
+      setWeeklyCharge("");
+      setWeightRange("");
+    } catch (error) {
+      console.error("Error downloading Moyer's data:", error);
+
+      // Handle the error properly based on its type
+      let errorMessage = "An unknown error occurred";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      } else if (error && typeof error === "object" && "message" in error) {
+        errorMessage = error.message as string;
+      }
+
+      alert(`Error: ${errorMessage}`);
+    }
+  };
   useEffect(() => {
     if (initialWeeklyCharges) {
       handleCalculate();
@@ -251,14 +335,98 @@ export default function CalculatePage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button
-                  variant="outline"
-                  className="border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                  onClick={() => window.history.back()}
-                >
-                  Back to Contract Viewer
-                </Button>
+                <div className="flex space-x-4">
+                  <Button
+                    variant="outline"
+                    className="border-gray-600 text-gray-300 hover:bg-gray-700 dark:border-gray-300 dark:text-gray-700 dark:hover:bg-gray-100"
+                    onClick={() => setIsModalOpen(true)}
+                  >
+                    Download Moyer&apos;s Data
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-gray-600 text-gray-300 hover:bg-gray-700 dark:border-gray-300 dark:text-gray-700 dark:hover:bg-gray-100"
+                    onClick={() => window.history.back()}
+                  >
+                    Back to Contract Viewer
+                  </Button>
+                </div>
               </div>
+
+              {/* Modal for downloading Moyer's data */}
+              {isModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg w-full max-w-md">
+                    <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                      Download Moyer&apos;s Data
+                    </h2>
+
+                    <div className="space-y-4">
+                      <div>
+                        <Label
+                          htmlFor="weeklyCharge"
+                          className="block mb-2 text-gray-700 dark:text-gray-300"
+                        >
+                          Weekly Charge ($)
+                        </Label>
+                        <Input
+                          id="weeklyCharge"
+                          type="number"
+                          step="1"
+                          min="0"
+                          value={weeklyCharge}
+                          onChange={(e) => {
+                            // Get the input value
+                            const value = e.target.value;
+                            // If empty, set to empty string, otherwise keep as string
+                            setWeeklyCharge(value === "" ? "" : value);
+                          }}
+                          className="w-full bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                        />
+                      </div>
+
+                      <div>
+                        <Label
+                          htmlFor="weightRange"
+                          className="block mb-2 text-gray-700 dark:text-gray-300"
+                        >
+                          Weight Range (width)
+                        </Label>
+                        <Input
+                          id="weightRange"
+                          type="number"
+                          step="1"
+                          min="0"
+                          value={weightRange}
+                          onChange={(e) => {
+                            // Get the input value
+                            const value = e.target.value;
+                            // If empty, set to empty string, otherwise keep as string
+                            setWeightRange(value === "" ? "" : value);
+                          }}
+                          className="w-full bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-4 mt-6">
+                      <Button
+                        variant="outline"
+                        className="border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                        onClick={() => setIsModalOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                        onClick={handleSubmit}
+                      >
+                        Submit
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <Tabs
                 defaultValue="discount"
