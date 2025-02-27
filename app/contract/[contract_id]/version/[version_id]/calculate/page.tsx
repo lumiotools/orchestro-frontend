@@ -24,9 +24,9 @@ import { getApiUrl } from "@/utils/api";
 interface RateData {
   weight: string;
   zone: string;
-  rate: string;
-  portfolio_discount: string;
-  incentive_discount: string;
+  rate: number;
+  portfolio_discount: number;
+  incentive_discount: number;
   total_discount: number;
   applied_discount_rate: number;
   pre_minimum: number;
@@ -35,7 +35,10 @@ interface RateData {
   is_min: boolean;
 }
 
-type ServiceObject = Record<string, RateData[]>; // Dynamic service names
+interface ServiceObject {
+  service: string,
+  discounts_datas: RateData[]
+} // Dynamic service names
 
 type CalculatedData = ServiceObject[]; // Array of dynamic service objects
 
@@ -69,9 +72,7 @@ export default function CalculatePage() {
       console.log("Calculated Data:", calculatedData);
 
       // Extract service names
-      const availableServices = calculatedData.flatMap((obj) =>
-        Object.keys(obj)
-      );
+      const availableServices = calculatedData.map((obj) => obj.service);
 
       console.log("Available Services:", availableServices);
       setServices(availableServices);
@@ -86,9 +87,9 @@ export default function CalculatePage() {
   useEffect(() => {
     if (calculatedData && selectedService) {
       const serviceObject = calculatedData.find(
-        (obj) => selectedService in obj
+        (obj) => obj.service === selectedService
       );
-      const rateDataArray = serviceObject ? serviceObject[selectedService] : [];
+      const rateDataArray = serviceObject?.discounts_datas || [];
 
       console.log("Rate Data for", selectedService, ":", rateDataArray);
       setRateData(rateDataArray);
@@ -167,7 +168,7 @@ export default function CalculatePage() {
       case "discount":
         return data.total_discount ? `${data.total_discount.toFixed(2)}%` : "-";
       case "preMin":
-        return data.pre_minimum ? `$${data.pre_minimum.toFixed(2)}` : "-";
+        return data.pre_minimum ? `$${Number(data.pre_minimum).toFixed(2)}` : "-";
       case "postMin":
         return data.final_min ? `$${data.final_min.toFixed(2)}` : "-";
       case "finalRate":
