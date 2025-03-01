@@ -93,7 +93,16 @@ function ContractList() {
                 <strong>Carrier:</strong> {contract.carrier}
               </p>
               <p>
-                <strong>Current Version:</strong> {contract.current_version_name}
+                <strong>Shipper:</strong> {contract.shipper}
+              </p>
+              <p>
+                <strong>Effective Date:</strong> {contract.effective_date}
+              </p>
+              <p>
+                <strong>End Date:</strong> {contract.end_date}
+              </p>
+              <p>
+                <strong>Current Version:</strong> {contract.current_version_id}
               </p>
               <p>
                 <strong>Versions Count:</strong> {contract.versions_count}

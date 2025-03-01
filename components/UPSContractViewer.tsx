@@ -37,7 +37,7 @@ interface ContractData {
 }
 
 const UPSContractViewer: React.FC<{ contractData: ContractData }> = ({ contractData }) => {
-  const excludedTables = ["eligible_accounts", "grace_earn_discount"]
+  const excludedTables = ["eligible_accounts"]
   const filteredTables = useMemo(() => {
     return Object.keys(contractData.tables).filter((table) => !excludedTables.includes(table))
   }, [contractData.tables])
@@ -53,7 +53,6 @@ const UPSContractViewer: React.FC<{ contractData: ContractData }> = ({ contractD
     if (!table || !table.tableData) return []
     return Array.from(new Set(table.tableData.rows.map((row) => row.service as string)))
       .filter(Boolean)
-      .sort()
   }, [contractData.tables, selectedTable])
 
   useEffect(() => {
@@ -65,6 +64,8 @@ const UPSContractViewer: React.FC<{ contractData: ContractData }> = ({ contractD
   const transformIncentivesData = (headers: string[], rows: any[]) => {
     const serviceRows = rows.filter((row) => row.service === selectedService)
     if (!serviceRows.length) return null
+
+    return {rows: serviceRows}
 
     const hasWeight = serviceRows.some((row) => row.weight)
 
@@ -131,7 +132,7 @@ const UPSContractViewer: React.FC<{ contractData: ContractData }> = ({ contractD
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transformedData.rows.map((row, rowIndex) => (
+              {transformedData?.rows?.map((row, rowIndex) => (
                 <TableRow key={rowIndex} className={rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                   {headers.map((header, cellIndex) => (
                     <TableCell key={cellIndex} className="border border-gray-200 px-4 py-2">

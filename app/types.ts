@@ -2,9 +2,11 @@ export interface Contract {
   contract_id: number
   status: string
   current_version_id: number
-  current_version_name: string
   versions_count: number
   carrier: string
+  shipper: string
+  effective_date: string
+  end_date: string
   contract_file_url: string
   contract_file_name: string
   created_at: string
