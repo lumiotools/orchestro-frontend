@@ -29,7 +29,14 @@ interface ContractData {
       tableData: {
         headers: string[]
         rows: Array<{
-          [key: string]: string | string[] | null
+          [key: string]: string | string[] | null | boolean | undefined
+          flag?: boolean
+        }>
+        missing_services_flags?: string[]
+        incorrect_services_flags?: string[]
+        missing_range_flags?: Array<{
+          service: string
+          range: string
         }>
       }
     }
@@ -51,8 +58,7 @@ const UPSContractViewer: React.FC<{ contractData: ContractData }> = ({ contractD
     if (!selectedTable) return []
     const table = contractData.tables[selectedTable]
     if (!table || !table.tableData) return []
-    return Array.from(new Set(table.tableData.rows.map((row) => row.service as string)))
-      .filter(Boolean)
+    return Array.from(new Set(table.tableData.rows.map((row) => row.service as string))).filter(Boolean)
   }, [contractData.tables, selectedTable])
 
   useEffect(() => {
@@ -65,7 +71,7 @@ const UPSContractViewer: React.FC<{ contractData: ContractData }> = ({ contractD
     const serviceRows = rows.filter((row) => row.service === selectedService)
     if (!serviceRows.length) return null
 
-    return {rows: serviceRows}
+    return { rows: serviceRows }
 
     const hasWeight = serviceRows.some((row) => row.weight)
 
@@ -103,6 +109,62 @@ const UPSContractViewer: React.FC<{ contractData: ContractData }> = ({ contractD
       weightUnit: serviceRows[0].weightUnit,
       hasWeight: true,
     }
+  }
+
+  const renderMissingServices = () => {
+    if (!selectedTable || !selectedService) return null
+
+    const table = contractData.tables[selectedTable]
+    if (!table?.tableData?.missing_services_flags?.length) return null
+
+    return (
+      <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+        <h4 className="text-sm font-semibold text-amber-800 mb-2">Missing Services</h4>
+        <ul className="list-disc pl-5 text-sm text-amber-700">
+          {table.tableData.missing_services_flags.map((service, index) => (
+            <li key={index}>{service}</li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+
+  const renderMissingRanges = () => {
+    if (!selectedTable || !selectedService) return null
+
+    const table = contractData.tables[selectedTable]
+    if (!table?.tableData?.missing_range_flags?.length) return null
+
+    // Filter missing ranges for the selected service
+    const relevantRanges = table.tableData.missing_range_flags.filter((item) => item.service === selectedService)
+
+    if (relevantRanges.length === 0) return null
+
+    return (
+      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+        <h4 className="text-sm font-semibold text-blue-800 mb-2">Missing Ranges for {selectedService}</h4>
+        <ul className="list-disc pl-5 text-sm text-blue-700">
+          {relevantRanges.map((item, index) => (
+            <li key={index}>{item.range}</li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+
+  const getIncorrectServicesHighlight = (header: string, value: any) => {
+    if (!selectedTable || header.toLowerCase() !== "service") return {}
+
+    const table = contractData.tables[selectedTable]
+    if (!table?.tableData?.incorrect_services_flags?.length) return {}
+
+    if (table.tableData.incorrect_services_flags.includes(value as string)) {
+      return {
+        className: "border border-gray-200 px-4 py-2 bg-red-100",
+      }
+    }
+
+    return {}
   }
 
   const renderIncentivesTable = (headers: string[], rows: any[]) => {
@@ -208,11 +270,21 @@ const UPSContractViewer: React.FC<{ contractData: ContractData }> = ({ contractD
         <TableBody>
           {rows.map((row, rowIndex) => (
             <TableRow key={rowIndex} className={rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-              {headers.map((header, cellIndex) => (
-                <TableCell key={cellIndex} className="border border-gray-200 px-4 py-2">
-                  {Array.isArray(row[header]) ? row[header].join(", ") : row[header] || "-"}
-                </TableCell>
-              ))}
+              {headers.map((header, cellIndex) => {
+                const cellValue = Array.isArray(row[header]) ? row[header].join(", ") : row[header] || "-"
+                const isFlagged = row.flag === true && header.toLowerCase() !== "service"
+                const incorrectServiceProps = getIncorrectServicesHighlight(header, cellValue)
+
+                return (
+                  <TableCell
+                    key={cellIndex}
+                    className={`border border-gray-200 px-4 py-2 ${isFlagged ? "bg-yellow-100" : ""}`}
+                    {...incorrectServiceProps}
+                  >
+                    {cellValue}
+                  </TableCell>
+                )
+              })}
             </TableRow>
           ))}
         </TableBody>
@@ -225,15 +297,24 @@ const UPSContractViewer: React.FC<{ contractData: ContractData }> = ({ contractD
 
     const table = contractData.tables[selectedTable]
     if (table && table.tableData) {
+      let content
       if (table.title === "Incentives off effective rate") {
-        return renderIncentivesTable(table.tableData.headers, table.tableData.rows)
+        content = renderIncentivesTable(table.tableData.headers, table.tableData.rows)
+      } else {
+        let filteredRows = table.tableData.rows
+        if (selectedService) {
+          filteredRows = filteredRows.filter((row) => row.service === selectedService)
+        }
+        content = renderRegularTable(table.tableData.headers, filteredRows)
       }
 
-      let filteredRows = table.tableData.rows
-      if (selectedService) {
-        filteredRows = filteredRows.filter((row) => row.service === selectedService)
-      }
-      return renderRegularTable(table.tableData.headers, filteredRows)
+      return (
+        <>
+          {content}
+          {renderMissingServices()}
+          {(table.title === "Portfolio Tier Incentive" || table.title === "Earned Discount") && renderMissingRanges()}
+        </>
+      )
     }
     return null
   }
