@@ -38,6 +38,10 @@ interface ContractData {
           service: string
           range: string
         }>
+        missing_zone_flags?: Array<{
+          service: string
+          zone: string
+        }>
       }
     }
   }
@@ -146,6 +150,29 @@ const UPSContractViewer: React.FC<{ contractData: ContractData }> = ({ contractD
         <ul className="list-disc pl-5 text-sm text-blue-700">
           {relevantRanges.map((item, index) => (
             <li key={index}>{item.range}</li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+
+  const renderMissingZones = () => {
+    if (!selectedTable || !selectedService) return null
+
+    const table = contractData.tables[selectedTable]
+    if (!table?.tableData?.missing_zone_flags?.length) return null
+
+    // Filter missing ranges for the selected service
+    const relevantRanges = table.tableData.missing_zone_flags.filter((item) => item.service === selectedService)
+
+    if (relevantRanges.length === 0) return null
+
+    return (
+      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+        <h4 className="text-sm font-semibold text-blue-800 mb-2">Missing Zones for {selectedService}</h4>
+        <ul className="list-disc pl-5 text-sm text-blue-700">
+          {relevantRanges.map((item, index) => (
+            <li key={index}>{item.zone}</li>
           ))}
         </ul>
       </div>
@@ -311,8 +338,9 @@ const UPSContractViewer: React.FC<{ contractData: ContractData }> = ({ contractD
       return (
         <>
           {content}
-          {renderMissingServices()}
           {(table.title === "Portfolio Tier Incentive" || table.title === "Earned Discount") && renderMissingRanges()}
+          {(table.title === "Service Adjustment") && renderMissingZones()}
+          {renderMissingServices()}
         </>
       )
     }

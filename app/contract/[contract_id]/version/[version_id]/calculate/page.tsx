@@ -199,7 +199,7 @@ export default function CalculatePage() {
     setLoading(true);
     try {
       const response = await fetch(
-        getApiUrl(`/api/v1/contract/calculate/${params.version_id}`),
+        getApiUrl(`/api/v1/contract/calculate/${params.contract_id}`),
         {
           method: "POST",
           headers: {
