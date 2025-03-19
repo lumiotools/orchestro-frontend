@@ -71,10 +71,10 @@ export default function CalculatePage() {
     try {
       // Convert input values to integers with fallback to 0 if invalid
       const weeklySpend = parseInt(weeklyCharge) || 0;
-      const weightRangeWidth = parseInt(weightRange) || 0;
+      const weightRangeWidth = parseInt(weightRange) || null;
 
       // Validate inputs
-      if (weeklySpend <= 0 || weightRangeWidth <= 0) {
+      if (weeklySpend <= 0) {
         alert("Please enter valid values for Weekly Charge and Weight Range");
         return;
       }
@@ -86,7 +86,7 @@ export default function CalculatePage() {
 
       // Construct API URL
       const apiUrl = getApiUrl(
-        `/api/v1/contract/${params.version_id}/discount_card/download`
+        `/api/v1/contract/${params.contract_id}/discount_card/download`
       );
 
       // Create request options
